@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - development
+      - production
+
+env:
+  CI: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Calculate build fingerprint
+        run: |
+          echo "SHA-256 of build/index.html:"
+          sha256sum build/index.html
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: react-build
+          path: build/
+
+  verify-artifact:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Inspect empty workspace
+        run: |
+          echo "Runner: ${{ runner.name }}"
+          echo "Workspace before artifact download:"
+          ls -la
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: react-build
+          path: build
+
+      - name: Inspect downloaded artifact
+        run: |
+          echo "Downloaded build:"
+          ls -la build
+          echo
+          echo "Static files:"
+          ls -la build/static
+
+      - name: Calculate downloaded fingerprint
+        run: |
+          echo "SHA-256 of downloaded build/index.html:"
+          sha256sum build/index.html
+
+  deliver-development:
+    needs: build
+    if: github.ref_name == 'development'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: react-build
+          path: build
+
+      - name: Deliver to development
+        run: |
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Simulating delivery to DEVELOPMENT"
+          echo
+          echo "Artifact contents:"
+          ls -la build
+
+  deploy-production:
+    needs: build
+    if: github.ref_name == 'production'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: react-build
+          path: build
+
+      - name: Deploy to production
+        run: |
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Simulating deployment to PRODUCTION"
+          echo
+          echo "Artifact contents:"
+          ls -la build
