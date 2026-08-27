@@ -7,6 +7,9 @@ on:
       - development
       - production
 
+permissions:
+  contents: read
+
 env:
   CI: true
 
@@ -95,6 +98,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
 
+    env:
+      DEPLOY_TARGET: ${{ vars.DEPLOY_TARGET }}
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v8
@@ -102,12 +109,20 @@ jobs:
           name: react-build
           path: build
 
+      - name: Verify deployment configuration
+        run: |
+          echo "Deployment target: $DEPLOY_TARGET"
+
+          if [ -z "$DEPLOY_TOKEN" ]; then
+            echo "ERROR: DEPLOY_TOKEN is missing"
+            exit 1
+          fi
+
+          echo "DEPLOY_TOKEN is available"
+
       - name: Deliver to development
         run: |
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Simulating delivery to DEVELOPMENT"
-          echo
-          echo "Artifact contents:"
+          echo "Deploying artifact to $DEPLOY_TARGET"
           ls -la build
 
   deploy-production:
@@ -116,6 +131,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
 
+    env:
+      DEPLOY_TARGET: ${{ vars.DEPLOY_TARGET }}
+      DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v8
@@ -123,10 +142,18 @@ jobs:
           name: react-build
           path: build
 
+      - name: Verify deployment configuration
+        run: |
+          echo "Deployment target: $DEPLOY_TARGET"
+
+          if [ -z "$DEPLOY_TOKEN" ]; then
+            echo "ERROR: DEPLOY_TOKEN is missing"
+            exit 1
+          fi
+
+          echo "DEPLOY_TOKEN is available"
+
       - name: Deploy to production
         run: |
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Simulating deployment to PRODUCTION"
-          echo
-          echo "Artifact contents:"
+          echo "Deploying artifact to $DEPLOY_TARGET"
           ls -la build
