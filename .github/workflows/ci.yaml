@@ -63,7 +63,7 @@ jobs:
           path: build/
 
   verify-artifact:
-    needs: build
+    needs: ci
     runs-on: ubuntu-latest
 
     steps:
@@ -93,7 +93,7 @@ jobs:
           sha256sum build/index.html
 
   deliver-development:
-    needs: build
+    needs: ci
     if: github.ref_name == 'development'
     runs-on: ubuntu-latest
     environment: development
@@ -126,7 +126,7 @@ jobs:
           ls -la build
 
   deploy-production:
-    needs: build
+    needs: ci
     if: github.ref_name == 'production'
     runs-on: ubuntu-latest
     environment: production
